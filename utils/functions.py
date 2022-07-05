@@ -16,31 +16,21 @@ class Experiment:
     sampler : 'iwkmeans' or 'BADGE'
     fusion_method : 'FedAvg' or 'gradients
     """
-    def __init__(self, name, is_FL, sampler=None, is_global_FAL=False, fusion_method='gradients', one_by_one_gradients=True, individual_results=False):
-        self.name = name
-        self.accuracies = []
-        self.is_FL = is_FL
-        self.sampler = sampler
+    def __init__(self, is_AL, is_fal_global, individual_results, sampler=None):
+        # self.name = name
+        # self.accuracies = []
+        self.is_AL = is_AL
         self.individual_results = individual_results
-        if is_FL:
-            self.is_global_FAL = is_global_FAL
-            # self.fusion_method = fusion_method
-            # self.one_by_one_gradients = one_by_one_gradients
-
-            #TODO useful ?
-            # if fusion_method == 'FedAvg':
-            #     assert is_global_FAL == False
-            #     self.one_by_one_gradients = False # assert one_by_one_gradients == False
-                
-            # if sampler == 'BADGE':
-            #     assert fusion_method == "gradients"
-
+        self.name= ('FAL-global' if is_fal_global else 'FAL-local') if is_AL else 'FL'
+        self.sampler = sampler
+        if is_AL:
+            # assert sampler is not None
+            self.is_fal_global = is_fal_global
         else:
-            self.individual_results = False
-            self.is_global_FAL = None
-            # self.fusion_method = None
-            # self.one_by_one_gradients = None
+            self.is_fal_global = None
         return
+
+
     
     def add_result(self, accuracies, individual_results=False):
         """

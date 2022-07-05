@@ -108,7 +108,6 @@ def test_img_local(net_g, dataset, args,idx=None,indd=None, user_idx=-1, idxs=No
 def test_img_local_all(net, args, dataset_test, dict_users_test,w_locals=None,w_glob_keys=None, indd=None,dataset_train=None,dict_users_train=None, return_all=False):
         """
         Returns mean test accuracies of all users or all individual test accuracies of each user
-        #TODO : rename function
         """
         tot = 0
         acc_test_local = np.zeros(args.num_users)

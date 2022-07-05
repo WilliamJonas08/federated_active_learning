@@ -8,6 +8,7 @@
 # This program implements FedRep under the specification --alg fedrep, as well as Fed-Per (--alg fedper), LG-FedAvg (--alg lg), 
 # FedAvg (--alg fedavg) and FedProx (--alg prox)
 
+# python main_fedrep.py --alg fedrep --dataset cifar10 --num_users 20
 import copy
 import itertools
 import numpy as np
@@ -32,6 +33,9 @@ def load_dataset(args):
         dataset_train, dataset_test, dict_users_train, dict_users_test = get_data(args)
         for idx in dict_users_train.keys():
             np.random.shuffle(dict_users_train[idx])
+
+        clients = None
+
     else:
         if 'femnist' in args.dataset:
             train_path = './leaf-master/data/' + args.dataset + '/data/mytrain'
@@ -74,7 +78,7 @@ def get_representation_parameters(args, net_glob):
     # specify the representation parameters (in w_glob_keys) and head parameters (all others)
     if args.alg == 'fedrep' or args.alg == 'fedper':
         if 'cifar' in  args.dataset:
-            w_glob_keys = [net_glob.weight_keys[i] for i in [0,1,3,4]]      #TODO : difference between net_glob.weight_keys et net_keys
+            w_glob_keys = [net_glob.weight_keys[i] for i in [0,1,2,3]] # I replaced [0,1,3,4] by [0,1,2,3] (list index out of range)                     #TODO : difference between net_glob.weight_keys et net_keys
         elif 'mnist' in args.dataset:
             w_glob_keys = [net_glob.weight_keys[i] for i in [0,1,2]]
         elif 'sent140' in args.dataset:
@@ -225,16 +229,7 @@ if __name__ == '__main__':
     #len looks like users weights (like relevance)  TODO verify
 
     # OTHER PARAMETERS
-    is_AL = True
-    sampler_name = "BADGE"
-    fal_global = False
-    get_individual_results = True
-    results_folder = "test"
-    # masks = np.zeros(args.num_users, len(dataset))
-
-    name = 'FAL - global' if fal_global else 'FAL - local'
-    exp= Experiment(name=name, is_FL=True, sampler=sampler_name, is_global_FAL=fal_global, individual_results=get_individual_results)
-    experiments = [exp]
+    exp_args = Experiment(is_AL=True, is_fal_global=False, individual_results=True, sampler="BADGE")
 
     # build model
     net_glob = build_model(args)
@@ -292,12 +287,12 @@ if __name__ == '__main__':
         loss_avg = sum(loss_locals) / len(loss_locals)  # Mean loss over clients local trains
         loss_train.append(loss_avg)
 
-        # get weighted average for global weights
+        # Get weighted average for global weights
         w_glob = fed_avg(net_glob, w_glob, total_len)
 
         # Active Learning 
-        if is_AL:
-            mask = active_learning_selection(sampler_name, mask, idxs_users, fal_global)
+        if exp_args.is_AL:
+            mask = active_learning_selection(exp_args.sampler_name, mask, idxs_users, exp_args.is_fal_global)
 
         # TODO comprendre les 3 lignes suivantes : Est ce pertinent de re-update le modèle local après l'aggregation globale ? Car je crois qu'on en fait rien de w_local avant la prochaine iteration
         w_local = net_glob.state_dict()     #TODO : pourquoi copier les poids du modèle global pour le modèle local ?? La tete du modèle va etre affectée non ?
@@ -319,7 +314,7 @@ if __name__ == '__main__':
 
             # Evaluation
             acc_test, loss_test = test_img_local_all(net_glob, args, dataset_test, dict_users_test,
-                                                        w_glob_keys=w_glob_keys, w_locals=w_locals,indd=indd,dataset_train=dataset_train, dict_users_train=dict_users_train, return_all=get_individual_results)
+                                                        w_glob_keys=w_glob_keys, w_locals=w_locals,indd=indd,dataset_train=dataset_train, dict_users_train=dict_users_train, return_all=exp_args.get_individual_results)
             accs.append(acc_test)
 
             # for algs which learn a single global model, these are the local accuracies (computed using the locally updated versions of the global model at the end of each round)
@@ -353,19 +348,41 @@ if __name__ == '__main__':
     if args.alg == 'fedavg' or args.alg == 'prox':
         print('Average global accuracy final 10 rounds: {}'.format(accs10_glob))
     end = time.time()
-    print(end-start)
-    print(times)
-    print(accs)
+    # print(end-start)
+    # print(times)
+    # print(accs)
 
     #Saving accuracies 1
     base_dir = './save/accs_' + args.alg + '_' +  args.dataset + str(args.num_users) +'_'+ str(args.shard_per_user) + '.csv'
     # user_save_path = base_dir     # user_save_path unused
-    accs = np.array(accs)
-    accs = pd.DataFrame(accs, columns=['accs'])
+    accs = pd.DataFrame(np.array(accs), columns=['accs'])
     accs.to_csv(base_dir, index=False)
 
     # Saving accuracies 2
-    
-    save_results(experiments, metric_value='', directory="FAL", dataset=args.dataset, results_folder=results_folder, clientdata_split_type="non-iid", nb_clients=nb_clients, train_epochs=train_epochs)
+
+    # save_results(experiments, metric_value='', directory="FAL", dataset=args.dataset, results_folder=results_folder, clientdata_split_type="non-iid", nb_clients=nb_clients, train_epochs=train_epochs)
     # save_results(experiments, metric_value, directory, dataset, results_folder, clientdata_split_type, nb_clients, train_epochs, personalisation)
-    exp
+    # exp
+
+
+def save_res(accuracies, exp_args):
+    #TODO directory management
+    if exp_args.get_individual_results:
+        base_dir = './save/accs_' + args.alg + '_' +  args.dataset + str(args.num_users) +'_indiv_'+ str(args.shard_per_user) + '.csv'
+        # data_to_save = []
+
+        # individual_results = True
+        # for round_id, iteration_accuracies in enumerate(accuracies):
+            # data_to_save.append()
+        df = pd.DataFrame([
+            [
+                {'setting': exp_args.name, 'sampler': exp_args.sampler_name, 'client':int(client_id), 'round': int(round_id), 'accuracy': acc} for client_id, acc in enumerate(iteration_accuracies)
+            ] for round_id, iteration_accuracies in enumerate(accuracies)])
+            # df = pd.concat([df, new_df], ignore_index=True)
+
+    else:
+        base_dir = './save/accs_' + args.alg + '_' +  args.dataset + str(args.num_users) +'_global_'+ str(args.shard_per_user) + '.csv'
+        # user_save_path = base_dir     # user_save_path unused
+        df = pd.DataFrame(np.array(accuracies), columns=['accs'])
+    
+    df.to_csv(base_dir, index=False)
