@@ -549,6 +549,10 @@ class LocalUpdate(object):
         self.idxs=idxs
 
     def train(self, net, w_glob_keys, last=False, dataset_test=None, ind=-1, idx=-1, lr=0.1):
+        """ 
+        Does one local training for one client (1 FL epoch / communication round)
+        TODO : last == True if it's the last FL communication round -> see why useful to train differently for the last round ?
+        """
         bias_p=[]
         weight_p=[]
         for name, p in net.named_parameters():
@@ -573,6 +577,7 @@ class LocalUpdate(object):
                              nesterov = False,
                              weight_decay = 1e-4)
 
+        # Define w_glob_keys and local_eps (number of training iterations)
         local_eps = self.args.local_ep
         if last:
             if self.args.alg =='fedavg' or self.args.alg == 'prox':
@@ -583,7 +588,8 @@ class LocalUpdate(object):
                 elif 'sent140' in self.args.dataset:
                     w_glob_keys = [net_keys[i] for i in [0,1,2,3,4,5]]
                 elif 'mnist' in args.dataset:
-                    w_glob_keys = [net_glob.weight_keys[i] for i in [0,1,2]]
+                    w_glob_keys = [net_glob.weight_keys[i] for i in [0,1,2]]    # TODO net_glob unavailable
+                    # w_glob_keys = [net.weight_keys[i] for i in [0,1,2]]   #TODO ?
             elif 'maml' in self.args.alg:
                 local_eps = 5
                 w_glob_keys = []
@@ -640,16 +646,16 @@ class LocalUpdate(object):
                     loss = self.loss_func(log_probs, labels)
                     loss.backward()
                     optimizer.step()
-                num_updates += 1
+                num_updates += 1                # TODO : pourquoi le nombre de local updates correspond au nombre de batchs traités par le réseau et non pas le nombre de fois ou le dataset local a été traité par le reseau ?
                 batch_loss.append(loss.item())
                 if num_updates == self.args.local_updates:
                     done = True
                     break
             epoch_loss.append(sum(batch_loss)/len(batch_loss))
             if done:
-                break
+                break   
             
-            epoch_loss.append(sum(batch_loss) / len(batch_loss))
+            # epoch_loss.append(sum(batch_loss) / len(batch_loss))  #TODO deleted because double same instruction
         return net.state_dict(), sum(epoch_loss) / len(epoch_loss), self.indd
 
 class LocalUpdateMTL(object):

@@ -74,3 +74,7 @@ Please cite our paper if you use our implementation of FedRep:
 # Acknowledgements
 
 Much of the code in this repository was adapted from code in [this repository](https://github.com/pliang279/LG-FedAvg) by Paul Pu Liang et al., which in turn was adapted from [this repository](https://github.com/shaoxiongji/federated-learning) by Shaoxiong Ji. For the implementation of Per-FedAvg, some of the code was adapted from the MAML PyTorch implementation [here](https://github.com/AntreasAntoniou/HowToTrainYourMAMLPytorch) by Antreas Antoniou.
+
+
+# QUESTIONS Personelles: 
+- Gradients aggregation not implemented in this framework ??

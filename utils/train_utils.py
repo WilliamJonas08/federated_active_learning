@@ -2,7 +2,7 @@
 # credit goes to: Paul Pu Liang
 
 from torchvision import datasets, transforms
-from models.Nets import CNNCifar, CNNCifar100, RNNSent, MLP
+from models.Nets import CNNCifar, CNNCifar100, RNNSent, MLP, CNN_FEMNIST
 from utils.sampling import noniid
 import os
 import json

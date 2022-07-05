@@ -9,7 +9,7 @@ import torch
 
 def noniid(dataset, num_users, shard_per_user, num_classes, rand_set_all=[]):
     """
-    Sample non-I.I.D client data from MNIST dataset
+    Sample non-I.I.D client data from MNIST and CIFAR datasets
     :param dataset:
     :param num_users:
     :return:
@@ -43,7 +43,7 @@ def noniid(dataset, num_users, shard_per_user, num_classes, rand_set_all=[]):
         x = list(x)
 
         for i, idx in enumerate(leftover):
-            x[i] = np.concatenate([x[i], [idx]])
+            x[i] = np.concatenate([x[i], [idx]])    #TODO : pourquoi x[i] plutot que x ?
         idxs_dict[label] = x
 
     if len(rand_set_all) == 0:
@@ -66,10 +66,10 @@ def noniid(dataset, num_users, shard_per_user, num_classes, rand_set_all=[]):
                 rand_set.append(idxs_dict[label].pop(idx))
         dict_users[i] = np.concatenate(rand_set)
 
-    test = []
-    for key, value in dict_users.items():
-        x = np.unique(torch.tensor(dataset.targets)[value])
-        test.append(value)
-    test = np.concatenate(test)
+    # test = []
+    # for key, value in dict_users.items():
+    #     x = np.unique(torch.tensor(dataset.targets)[value])
+    #     test.append(value)
+    # test = np.concatenate(test)
 
     return dict_users, rand_set_all
